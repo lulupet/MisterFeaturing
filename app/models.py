@@ -23,4 +23,4 @@ class ArtistSong(db.Model):
     song_id = db.Column(db.String(64), db.ForeignKey('song.id'))
 
     def __repr__(self):
-        return self.song + ' - ' + self.artist
+        return self.song_id + ' - ' + self.artist_id

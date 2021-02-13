@@ -5,8 +5,6 @@ from app import db
 from .models import Artist, Song, ArtistSong
 
 
-    #https://www.geeksforgeeks.org/building-an-undirected-graph-and-finding-shortest-path-using-dictionaries-in-python/
-
 def featuring_in_list(l, a, b):
     return [a, b] in l or [b, a] in l
 
@@ -15,10 +13,10 @@ def featuring_in_list(l, a, b):
 def build_graph():
     edges = []
     for song in Song.query.all():
-        for artist_song_1 in ArtistSong.query(song==song):
-            for artist_song_2 in ArtistSong.query(song==song):
-                if not featuring_in_list(edges, artist_1.id, artist_2.id) and artist_1.id != artist_2.id:
-                    edges.append([artist_1.id, artist_2.id])
+        for artist_song_1 in ArtistSong.query.filter(ArtistSong.song_id==song.id):
+            for artist_song_2 in ArtistSong.query.filter(ArtistSong.song_id==song.id):
+                if not featuring_in_list(edges, artist_song_1.artist_id, artist_song_2.artist_id) and artist_song_1.artist_id != artist_song_2.artist_id:
+                    edges.append([artist_song_1.artist_id, artist_song_2.artist_id])
     graph = defaultdict(list)
       
     # Loop to iterate over every edge of the graph 
@@ -28,6 +26,7 @@ def build_graph():
         # Creating the graph as adjacency list 
         graph[a].append(b)
         graph[b].append(a)
+    print(graph)
     return graph
 
 
@@ -79,22 +78,6 @@ def BFS_SP(graph, start, goal):
     print("So sorry, but a connecting path doesn't exist :(")
 
     return
-  
-# Driver Code 
-if __name__ == "__main__": 
-      
-    # Graph using dictionaries 
-    graph = {'A': ['B', 'E', 'C'], 
-            'B': ['A', 'D', 'E'], 
-            'C': ['A', 'F', 'G'], 
-            'D': ['B', 'E'], 
-            'E': ['A', 'B', 'D'], 
-            'F': ['C'], 
-            'G': ['C']} 
-      
-    # Function Call 
-    BFS_SP(graph, 'A', 'D') 
-
 
 
 def get_featuring(artist_1, artist_2):
@@ -107,5 +90,5 @@ def get_featuring(artist_1, artist_2):
     else:
         return {"artist": "Name of artist 2 does not exist"}
     graph = build_graph()
-    BFS_SP(graph, artist_1.id, artist_2.id) 
+    BFS_SP(graph, str(artist_1.id), str(artist_2.id)) 
     return 'ok'
