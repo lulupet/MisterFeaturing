@@ -1,4 +1,5 @@
-from collections import defaultdict 
+from collections import defaultdict
+from flask import jsonify
 
 from app import db
 
@@ -18,77 +19,66 @@ def build_graph():
                 if not featuring_in_list(edges, artist_song_1.artist_id, artist_song_2.artist_id) and artist_song_1.artist_id != artist_song_2.artist_id:
                     edges.append([artist_song_1.artist_id, artist_song_2.artist_id])
     graph = defaultdict(list)
-      
-    # Loop to iterate over every edge of the graph 
     for edge in edges:
         a, b = edge[0], edge[1]
-          
-        # Creating the graph as adjacency list 
         graph[a].append(b)
         graph[b].append(a)
-    print(graph)
     return graph
 
 
-# Python implementation to find the  
-# shortest path in the graph using  
-# dictionaries  
-  
-# Function to find the shortest 
-# path between two nodes of a graph 
-def BFS_SP(graph, start, goal): 
-    explored = [] 
-      
-    # Queue for traversing the  
-    # graph in the BFS 
-    queue = [[start]] 
-      
-    # If the desired node is  
-    # reached 
+def find_shortest_path(graph, start, goal): 
+    explored = []
+    queue = [[start]]
     if start == goal: 
-        print("Same Node") 
-        return
-      
-    # Loop to traverse the graph  
-    # with the help of the queue 
+        return 'same artists'
     while queue: 
-        path = queue.pop(0) 
-        node = path[-1] 
-          
-        # Codition to check if the 
-        # current node is not visited 
-        if node not in explored: 
-            neighbours = graph[node] 
-              
-            # Loop to iterate over the  
-            # neighbours of the node 
-            for neighbour in neighbours: 
-                new_path = list(path) 
-                new_path.append(neighbour) 
-                queue.append(new_path) 
-                  
-                # Condition to check if the  
-                # neighbour node is the goal 
-                if neighbour == goal: 
-                    print("Shortest path = ", *new_path) 
-                    return
-            explored.append(node) 
-  
-    # Condition when the nodes are not connected 
-    print("So sorry, but a connecting path doesn't exist :(")
+        path = queue.pop(0)
+        node = path[-1]
+        if node not in explored:
+            neighbours = graph[node]
+            for neighbour in neighbours:
+                new_path = list(path)
+                new_path.append(neighbour)
+                queue.append(new_path)
+                if neighbour == goal:
+                    return new_path
+            explored.append(node)
+    return 'no existing path'
 
-    return
+
+def get_common_song(artist_1, artist_2):
+    for song_artist_1 in ArtistSong.query.filter(ArtistSong.artist_id==artist_1):
+        for song_artist_2 in ArtistSong.query.filter(ArtistSong.artist_id==artist_2):
+            if song_artist_1.song_id == song_artist_2.song_id:
+                return Song.query.get(song_artist_1.song_id).name
+
+
+def get_detailed_path(path):
+    detailed_path = []
+    for i in range(len(path) - 1):
+        artist_1 = int(path[i])
+        artist_2 = int(path[i + 1])
+        detailed_path.append({
+            'artist_1': Artist.query.get(artist_1).name,
+            'song': get_common_song(artist_1, artist_2),
+            'artist_2': Artist.query.get(artist_1).name
+        })
+    return detailed_path
 
 
 def get_featuring(artist_1, artist_2):
     if Artist.query.filter_by(name=artist_1).count() != 0:
         artist_1 = db.session.query(Artist).filter_by(name=artist_1).first()
     else:
-        return {"artist": "Name of artist 1 does not exist"}
+        return jsonify(message='name of artist 1 does not exist'), 500
     if Artist.query.filter_by(name=artist_2).count() != 0:
         artist_2 = db.session.query(Artist).filter_by(name=artist_2).first()
     else:
-        return {"artist": "Name of artist 2 does not exist"}
+        return jsonify(message='name of artist 2 does not exist'), 500
     graph = build_graph()
-    BFS_SP(graph, str(artist_1.id), str(artist_2.id)) 
-    return 'ok'
+    path = find_shortest_path(graph, str(artist_1.id), str(artist_2.id))
+    if path in ['no existing path', 'same artists'] :
+        return jsonify(message=path), 500
+    else:
+        detailed_path = get_detailed_path(path)
+        return jsonify(path=detailed_path), 200

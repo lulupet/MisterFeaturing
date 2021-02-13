@@ -18,6 +18,7 @@
         <input type="text" id="artist_2" name="artist_2">
     </form>
     <button>Go</button>
+    <div id="path"></div>
 </body>
 
 <script>
@@ -31,8 +32,16 @@
 	    		url: '/get_featuring',
 	    		data: data,
 	    		type: 'POST',
-	    		success: function(response){},
-	    		error: function(error){}
+	    		success: function(response){
+                    for (el of response.path) {
+                        $('#path').append('<div>' + el.artist_1 + '</div>'); 
+                        $('#path').append('<div>' + el.song + '</div>'); 
+                        $('#path').append('<div>' + el.artist_2 + '</div>'); 
+                    }
+                },
+	    		error: function(error){
+                    console.log(error);
+                }
             });
         });
     });
